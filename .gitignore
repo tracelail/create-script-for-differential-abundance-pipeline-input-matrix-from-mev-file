@@ -1,0 +1,72 @@
+# Raw sequencing data files
+data/raw/*
+!data/raw/README.md
+
+# Processed sequencing data
+*.fastq
+*.fq
+*.fastq.gz
+*.fq.gz
+*.bam
+*.sam
+*.bai
+*.sai
+*.bcf
+*.vcf
+*.vcf.gz
+*.tbi
+
+# Large processed data files
+*.bed
+*.wig
+*.bigwig
+*.bw
+*.bedgraph
+*.bg
+*.mev
+
+# R specific files
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+*.Rproj
+Rplots.pdf
+
+# Python specific files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Log files and temporary files
+*.log
+*.tmp
+temp/
+logs/
+log/
+
+# OS specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

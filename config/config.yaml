@@ -1,0 +1,10 @@
+# Project configuration
+
+# Sequence filtering parameters
+min_length: 200
+max_n_content: 0.1
+
+# Input data
+samples:
+  - sample1
+  - sample2
