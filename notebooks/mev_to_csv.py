@@ -3,13 +3,14 @@ import numpy as np
 
 
 class MevToCsv:
-    def __init__(self, mev_path, csv_path, quality_score=True):
+    def __init__(self, mev_path, csv_path, quality_score=True, write_to_csv=True):
         """
         Convert a .mev file to a .csv file.
         """
         self.mev_path = mev_path
         self.csv_path = csv_path
         self.quality_score = quality_score
+        self.write_to_csv = write_to_csv
         self.dataframe = None
 
     @property
@@ -50,14 +51,14 @@ class MevToCsv:
             return 0.8  # Other flags
 
     def create_expression_matrix(
-        self, dataframe, sample_identifier, quality_score
+        self, dataframe
     ):  # Check that necessary columns are present
         required_columns = ["IA", "IB", "FeatName"]
         if not all(col in dataframe.columns for col in required_columns):
             raise ValueError(f"Missing required columns: {', '.join(required_columns)}")
 
         # Create quality score if quality_score is True
-        if quality_score:
+        if self.quality_score:
             dataframe["quality_score"] = dataframe.apply(
                 lambda row: self.create_quality_score(row), axis=1
             )
@@ -79,7 +80,7 @@ class MevToCsv:
         )
 
         # Multiply by quality score in place if quality_score is True
-        if quality_score:
+        if self.quality_score:
             expression_matrix["log2_expression"] *= expression_matrix["quality_score"]
 
         expression_matrix = expression_matrix[["FeatName", "log2_expression"]]
@@ -87,15 +88,14 @@ class MevToCsv:
             "log2_expression"
         ].fillna(0)
         expression_matrix.rename(
-            columns={"log2_expression": f"{sample_identifier}"}, inplace=True
+            columns={"log2_expression": f"{self.sample_identifier}"}, inplace=True
         )
         return expression_matrix
 
     def convert(self):
         mev_header = self.read_mev_header(self.mev_path)
         df = self.read_mev_data(self.mev_path)
-        expression_matrix = self.create_expression_matrix(
-            df, self.sample_identifier, self.quality_score
-        )
-        expression_matrix.to_csv(self.csv_path, index=False)
+        expression_matrix = self.create_expression_matrix(df)
+        if self.write_to_csv:
+            expression_matrix.to_csv(self.csv_path, index=False)
         return mev_header, expression_matrix
