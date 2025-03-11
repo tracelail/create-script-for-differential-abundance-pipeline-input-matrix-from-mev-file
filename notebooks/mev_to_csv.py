@@ -1,9 +1,11 @@
 import pandas as pd
 import numpy as np
+import glob
+import os
 
 
 class MevToCsv:
-    def __init__(self, mev_path, csv_path, quality_score=True, write_to_csv=True):
+    def __init__(self, mev_path, csv_path=None, quality_score=True, write_to_csv=False):
         """
         Convert a .mev file to a .csv file.
         """
@@ -52,7 +54,7 @@ class MevToCsv:
 
     def create_expression_matrix(
         self, dataframe
-    ):  # Check that necessary columns are present
+    ) -> pd.DataFrame:  # Check that necessary columns are present
         required_columns = ["IA", "IB", "FeatName"]
         if not all(col in dataframe.columns for col in required_columns):
             raise ValueError(f"Missing required columns: {', '.join(required_columns)}")
@@ -99,3 +101,91 @@ class MevToCsv:
         if self.write_to_csv:
             expression_matrix.to_csv(self.csv_path, index=False)
         return mev_header, expression_matrix
+
+
+class ExpressionMatrixBuilder:
+    def __init__(
+        self, mev_paths, csv_paths=None, quality_score=True, write_to_csv=True
+    ):
+        self.mev_paths = mev_paths
+        self.csv_paths = csv_paths
+        self.quality_score = quality_score
+        self.write_to_csv = write_to_csv
+        self.headers = []
+        self.expression_matrices = []
+
+    @classmethod
+    def paths_builder(cls, folder, suffix=".mev"):
+        """Generates mev_paths from a directory."""
+        mev_paths = sorted(glob.glob(os.path.join(folder, f"*{suffix}")))
+        return mev_paths
+
+    def read_mevs(self):
+        for mev_path in self.mev_paths:
+            mev_to_csv = MevToCsv(
+                mev_path,
+                csv_path=None,
+                quality_score=self.quality_score,
+                write_to_csv=False,
+            )
+            mev_header, expression_matrix = mev_to_csv.convert()
+            self.headers.append(mev_header)
+            self.expression_matrices.append(expression_matrix)
+        return self.headers, self.expression_matrices
+
+    def merge_mevs(self):
+        merged_expression_matrix = pd.concat(
+            self.expression_matrices, axis=1, join="outer"
+        )
+
+        # Check for duplicate samples/columns
+        duplicate_columns = merged_expression_matrix.columns[
+            merged_expression_matrix.columns.duplicated()
+        ]
+        if not duplicate_columns.empty:
+            warning_samples = ", ".join(duplicate_columns)
+            print(f"⚠️ Warning: Duplicate sample identifiers found: {warning_samples}")
+            # Remove duplicate columns, keeping only the first occurrence
+            merged_expression_matrix = merged_expression_matrix.loc[
+                :, ~merged_expression_matrix.columns.duplicated()
+            ]
+
+        # Count and fill NA values
+        na_count = merged_expression_matrix.isna().sum().sum()
+        if na_count > 0:
+            print(f"⚠️ {na_count} missing values were filled with 0.")
+            merged_expression_matrix.fillna(0, inplace=True)
+
+        return merged_expression_matrix
+
+    def save_merged_matrix(self, output_path, index=False):
+        """Save the merged expression matrix to a CSV file."""
+        merged_matrix = self.merge_mevs()
+        merged_matrix.to_csv(output_path, index=index)
+        return merged_matrix
+
+
+def process_mev_folder(input_folder, output_path, quality_score=True, index=False):
+    """
+    Process all .mev files in a folder and create a single merged expression matrix.
+
+    Parameters:
+    -----------
+    input_folder : str
+        Path to folder containing .mev files
+    output_path : str
+        Path where the merged matrix will be saved
+    quality_score : bool, default=True
+        Whether to apply quality scoring
+
+    Returns:
+    --------
+    pandas.DataFrame
+        The merged expression matrix
+    """
+    mev_paths = ExpressionMatrixBuilder.paths_builder(input_folder)
+    builder = ExpressionMatrixBuilder(mev_paths, quality_score=quality_score)
+    _, _ = builder.read_mevs()
+    merged_matrix = builder.merge_mevs()
+    builder.save_merged_matrix(output_path, index=index)
+    return merged_matrix
