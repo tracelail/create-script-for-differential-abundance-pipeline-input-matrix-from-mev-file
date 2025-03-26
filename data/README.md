@@ -23,5 +23,16 @@ Add information about your datasets here:
 - Date obtained: 2025-02-18
 - accession: `E-GEOD-15262`
 
+### Array design matrix
+- Found array design matrix A-GEOD-7317. https://www.ebi.ac.uk/biostudies/arrayexpress/arrays/A-GEOD-7317
+- This was mentioned in the E-GEOD-15262.sdrf.txt
+
+### reference genome
+- Could not find Montastraea faveolata genome but found Orbicella faveolata.
+    - Montastraea faveolata is a homotypic synonym for Orbicella faveolata.
+- genome: https://www.ncbi.nlm.nih.gov/nuccore/NC_007226.1/
+- Accession: NC_007226
+- Version: NC_007226.1
+
 ## Notes
 
